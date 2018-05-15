@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.trellisldp.rdfa;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -82,10 +83,9 @@ public class HtmlSerializerTest {
         when(mockNamespaceService.getNamespaces()).thenReturn(namespaces);
         when(mockNamespaceService.getPrefix(eq("http://purl.org/dc/terms/"))).thenReturn(Optional.of("dc"));
         when(mockNamespaceService.getPrefix(eq("http://sws.geonames.org/4929022/"))).thenReturn(empty());
-        when(mockNamespaceService.getPrefix(eq("http://www.w3.org/1999/02/22-rdf-syntax-ns#")))
-            .thenReturn(Optional.of("rdf"));
-        when(mockNamespaceService.getPrefix(eq("http://purl.org/dc/dcmitype/")))
-            .thenReturn(Optional.of("dcmitype"));
+        when(mockNamespaceService.getPrefix(eq("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))).thenReturn(
+                Optional.of("rdf"));
+        when(mockNamespaceService.getPrefix(eq("http://purl.org/dc/dcmitype/"))).thenReturn(Optional.of("dcmitype"));
     }
 
     @Test
@@ -162,8 +162,28 @@ public class HtmlSerializerTest {
     public void testHtmlSerializer5() throws Exception {
         final String path = getClass().getResource("/resource-test.mustache").toURI().getPath();
 
+        final RDFaWriterService service4 = new HtmlSerializer(null, path, "//www.trellisldp.org/assets/css/trellis.css",
+                "", null);
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        service4.write(getTriples2(), out, "http://example.org/");
+        final String html = new String(out.toByteArray(), UTF_8);
+        assertTrue(html.contains("<title>http://example.org/</title>"));
+        assertTrue(html.contains("_:B"));
+        assertTrue(html.contains("<a href=\"http://sws.geonames.org/4929022/\">http://sws.geonames.org/4929022/</a>"));
+        assertTrue(html.contains("<a href=\"http://purl.org/dc/terms/spatial\">http://purl.org/dc/terms/spatial</a>"));
+        assertTrue(html.contains("<a href=\"http://purl.org/dc/dcmitype/Text\">http://purl.org/dc/dcmitype/Text</a>"));
+        assertTrue(html.contains("<a href=\"mailto:user@host.com\">mailto:user@host.com</a>"));
+        assertTrue(html.contains("<h1>http://example.org/</h1>"));
+    }
+
+    @Test
+    public void testHtmlSerializer6() throws Exception {
+        final String path = getClass().getResource("/resource-table.mustache").toURI().getPath();
+
         final RDFaWriterService service4 = new HtmlSerializer(null, path,
-                "//www.trellisldp.org/assets/css/trellis.css", "", null);
+                "https://unpkg.com/vanilla-datatables@latest/dist/vanilla-dataTables.min.css",
+                "", null);
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         service4.write(getTriples2(), out, "http://example.org/");
@@ -180,15 +200,12 @@ public class HtmlSerializerTest {
     private static Stream<Triple> getTriples() {
         final Node sub = createURI("trellis:repository/resource");
         final Node bn = createBlankNode();
-        return of(
-                create(sub, title.asNode(), createLiteral("A title")),
-                create(sub, subject.asNode(), bn),
+        return of(create(sub, title.asNode(), createLiteral("A title")), create(sub, subject.asNode(), bn),
                 create(bn, title.asNode(), createLiteral("Other title")),
                 create(sub, spatial.asNode(), createURI("http://sws.geonames.org/4929022/")),
                 create(sub, spatial.asNode(), createURI("http://sws.geonames.org/4929023/")),
                 create(sub, spatial.asNode(), createURI("http://sws.geonames.org/4929024/")),
-                create(sub, type, Text.asNode()))
-            .map(rdf::asTriple);
+                create(sub, type, Text.asNode())).map(rdf::asTriple);
 
     }
 
@@ -196,13 +213,10 @@ public class HtmlSerializerTest {
         final Node sub = createURI("trellis:repository/resource");
         final Node other = createURI("mailto:user@host.com");
         final Node bn = createBlankNode();
-        return of(
-                create(sub, subject.asNode(), bn),
+        return of(create(sub, subject.asNode(), bn),
                 create(sub, spatial.asNode(), createURI("http://sws.geonames.org/4929022/")),
-                create(bn, type, Text.asNode()),
-                create(bn, subject.asNode(), other),
-                create(sub, type, Text.asNode()))
-            .map(rdf::asTriple);
+                create(bn, type, Text.asNode()), create(bn, subject.asNode(), other),
+                create(sub, type, Text.asNode())).map(rdf::asTriple);
 
     }
 }
